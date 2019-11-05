@@ -12,6 +12,10 @@ import (
 
 const bufferSize = 1 << 20
 
+func errEmptyPath() error {
+	return errors.New("path is empty")
+}
+
 func errNotFile(path string) error {
 	return fmt.Errorf("not a file: %s", path)
 }
@@ -21,6 +25,10 @@ func errNotDir(path string) error {
 }
 
 func exists(path string) (bool, error) {
+	if len(path) <= 0 {
+		return false, errEmptyPath()
+	}
+
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false, nil
@@ -44,6 +52,10 @@ func isSymlink(info os.FileInfo) bool {
 }
 
 func isFileOrDir(path string, dir bool) (bool, error) {
+	if len(path) <= 0 {
+		return false, errEmptyPath()
+	}
+
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false, nil
@@ -55,6 +67,10 @@ func isFileOrDir(path string, dir bool) (bool, error) {
 }
 
 func parent(path string) (string, error) {
+	if len(path) <= 0 {
+		return "", errEmptyPath()
+	}
+
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return "", err
@@ -91,6 +107,10 @@ func isParentDir(path string) (bool, error) {
 }
 
 func checkFileOrDir(path string, dir bool) (*FileInfo, error) {
+	if len(path) <= 0 {
+		return nil, errEmptyPath()
+	}
+
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, err
