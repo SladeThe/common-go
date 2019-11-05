@@ -186,13 +186,13 @@ func readersContentEqual(r1, r2 io.Reader) (bool, error) {
 
 	for {
 		n1, err1 := readChunk(r1, buf1)
-		eof1 := errors.Is(err1, io.EOF)
+		eof1 := errors.Is(err1, EOF)
 		if err1 != nil && !eof1 {
 			return false, err1
 		}
 
 		n2, err2 := readChunk(r2, buf2)
-		eof2 := errors.Is(err2, io.EOF)
+		eof2 := errors.Is(err2, EOF)
 		if err2 != nil && !eof2 {
 			return false, err2
 		}

@@ -6,6 +6,14 @@ import (
 
 const BufferSize = bufferSize
 
+var (
+	ErrShortWrite    = io.ErrShortWrite
+	ErrShortBuffer   = io.ErrShortBuffer
+	EOF              = io.EOF
+	ErrUnexpectedEOF = io.ErrUnexpectedEOF
+	ErrNoProgress    = io.ErrNoProgress
+)
+
 func Exists(path string) (bool, error) {
 	return exists(path)
 }
