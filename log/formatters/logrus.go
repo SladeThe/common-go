@@ -94,7 +94,9 @@ func (formatter *Logrus) Format(entry *logrus.Entry) ([]byte, error) {
 		printLevel(" [PANIC] ")
 	}
 
-	if entry.HasCaller() {
+	hasCaller := entry.HasCaller()
+
+	if hasCaller {
 		functionName := filepath.Base(entry.Caller.Function)
 		for compiledRegexp, replacement := range functionReplacementByRegexp {
 			functionName = compiledRegexp.ReplaceAllString(functionName, replacement)
@@ -105,7 +107,7 @@ func (formatter *Logrus) Format(entry *logrus.Entry) ([]byte, error) {
 
 	buf.WriteString(entry.Message)
 
-	if entry.HasCaller() {
+	if hasCaller {
 		buf.WriteString(fmt.Sprintf(" (%s:%d)", filepath.Base(entry.Caller.File), entry.Caller.Line))
 	}
 
