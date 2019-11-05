@@ -71,6 +71,8 @@ func DiffDirs(path1, path2 string) (diffs []Diff, err error) {
 	return
 }
 
+// ----------------------------------------------------------------------------------------------------
+
 func WriteString(w io.Writer, s string) (n int, err error) {
 	return io.WriteString(w, s)
 }
