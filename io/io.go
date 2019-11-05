@@ -4,7 +4,13 @@ import (
 	"io"
 )
 
-const BufferSize = bufferSize
+const (
+	BufferSize = bufferSize
+
+	SeekStart   = io.SeekStart
+	SeekCurrent = io.SeekCurrent
+	SeekEnd     = io.SeekEnd
+)
 
 var (
 	ErrShortWrite    = io.ErrShortWrite
@@ -63,4 +69,32 @@ func DirsEqual(path1, path2 string) (equal bool, err error) {
 func DiffDirs(path1, path2 string) (diffs []Diff, err error) {
 	_, err = dirsEqual(path1, path2, &diffs)
 	return
+}
+
+func WriteString(w io.Writer, s string) (n int, err error) {
+	return io.WriteString(w, s)
+}
+
+func ReadAtLeast(r io.Reader, buf []byte, min int) (n int, err error) {
+	return io.ReadAtLeast(r, buf, min)
+}
+
+func ReadFull(r io.Reader, buf []byte) (n int, err error) {
+	return io.ReadFull(r, buf)
+}
+
+func CopyN(dst io.Writer, src io.Reader, n int64) (written int64, err error) {
+	return io.CopyN(dst, src, n)
+}
+
+func Copy(dst io.Writer, src io.Reader) (written int64, err error) {
+	return io.Copy(dst, src)
+}
+
+func CopyBuffer(dst io.Writer, src io.Reader, buf []byte) (written int64, err error) {
+	return io.CopyBuffer(dst, src, buf)
+}
+
+func LimitReader(r io.Reader, n int64) io.Reader {
+	return io.LimitReader(r, n)
 }
