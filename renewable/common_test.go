@@ -3,6 +3,7 @@ package renewable
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -12,8 +13,8 @@ import (
 )
 
 const (
-	period          = 75 * time.Millisecond
-	errPeriod       = 100 * time.Millisecond
+	defaultPeriod   = 75 * time.Millisecond
+	errorPeriod     = 100 * time.Millisecond
 	safeCheckPeriod = 25 * time.Millisecond
 )
 
@@ -21,25 +22,13 @@ const (
 //
 //noinspection GoBoolExpressions
 var (
-	_ = map[bool]struct{}{
-		false:               {},
-		safeCheckPeriod > 0: {},
-	}
+	_ = map[bool]struct{}{false: {}, safeCheckPeriod > 0: {}}
+	_ = map[bool]struct{}{false: {}, defaultPeriod >= safeCheckPeriod*3: {}}
+	_ = map[bool]struct{}{false: {}, errorPeriod >= safeCheckPeriod*3: {}}
 
 	_ = map[bool]struct{}{
-		false:                       {},
-		period >= safeCheckPeriod*3: {},
-	}
-
-	_ = map[bool]struct{}{
-		false:                          {},
-		errPeriod >= safeCheckPeriod*3: {},
-	}
-
-	_ = map[bool]struct{}{
-		false: {},
-		period > errPeriod && period-errPeriod >= safeCheckPeriod ||
-			errPeriod > period && errPeriod-period >= safeCheckPeriod: {},
+		defaultPeriod > errorPeriod && defaultPeriod-errorPeriod >= safeCheckPeriod: {},
+		errorPeriod > defaultPeriod && errorPeriod-defaultPeriod >= safeCheckPeriod: {},
 	}
 )
 
@@ -48,17 +37,17 @@ func simpleTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc)
 
 	results := make([]result, 0, iterCount*2)
 	for i := 0; i < iterCount; i++ {
-		results = append(results, result{value: i}, result{err: fmt.Errorf("%d", i)})
+		results = append(results, result{val: i}, result{err: fmt.Errorf("%d", i)})
 	}
 
-	renewable := createRenewable(func() (value interface{}, err error) {
+	renewable := createRenewable(func(context.Context) (value interface{}, err error) {
 		if len(results) <= 0 {
 			assert.FailNow(t, "results are unexpectedly empty")
 		}
 
 		r := results[0]
 		results = results[1:]
-		return r.value, r.err
+		return r.val, r.err
 	})
 
 	time.Sleep(safeCheckPeriod)
@@ -71,9 +60,9 @@ func simpleTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc)
 		assert.Equal(t, iterCount*2-i*2-1, len(results))
 
 		if i > 0 {
-			time.Sleep(period - 2*safeCheckPeriod)
+			time.Sleep(defaultPeriod - 2*safeCheckPeriod)
 		} else {
-			time.Sleep(period - safeCheckPeriod)
+			time.Sleep(defaultPeriod - safeCheckPeriod)
 		}
 
 		value, err = renewable.Get()
@@ -88,7 +77,7 @@ func simpleTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc)
 		assert.Equal(t, fmt.Errorf("%d", i), err)
 		assert.Equal(t, iterCount*2-i*2-2, len(results))
 
-		time.Sleep(errPeriod - 2*safeCheckPeriod)
+		time.Sleep(errorPeriod - 2*safeCheckPeriod)
 
 		value, err = renewable.Get()
 		assert.Nil(t, value)
@@ -104,11 +93,17 @@ func asyncTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc) 
 		iterCount         = 10
 		getRoutineCount   = 2
 		checkRoutineCount = 4
+		minNumCPU         = 4
 	)
+
+	assert.GreaterOrEqual(t, runtime.NumCPU(), minNumCPU, "insufficient CPUs to run the test properly")
+	if t.Failed() {
+		t.FailNow()
+	}
 
 	var iter uint64 = 0
 
-	renewable := createRenewable(func() (value interface{}, err error) {
+	renewable := createRenewable(func(context.Context) (value interface{}, err error) {
 		i := atomic.LoadUint64(&iter)
 		if i > (iterCount+1)*2 {
 			assert.FailNow(t, fmt.Sprintf("iter is unexpectedly large: %d", i))
@@ -132,6 +127,8 @@ func asyncTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc) 
 
 	for i := 0; i < getRoutineCount; i++ {
 		go func() {
+			defer gwg.Done()
+
 			assert.NotPanics(t, func() {
 				for {
 					select {
@@ -142,8 +139,6 @@ func asyncTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc) 
 					}
 				}
 			})
-
-			gwg.Done()
 		}()
 	}
 
@@ -152,6 +147,8 @@ func asyncTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc) 
 
 	for i := 0; i < checkRoutineCount; i++ {
 		go func() {
+			defer cwg.Done()
+
 			assert.NotPanics(t, func() {
 				for i := 0; i < iterCount; i++ {
 					value, err := renewable.Get()
@@ -159,9 +156,9 @@ func asyncTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc) 
 					assert.Nil(t, err)
 
 					if i > 0 {
-						time.Sleep(period - 2*safeCheckPeriod)
+						time.Sleep(defaultPeriod - 2*safeCheckPeriod)
 					} else {
-						time.Sleep(period - safeCheckPeriod)
+						time.Sleep(defaultPeriod - safeCheckPeriod)
 					}
 
 					value, err = renewable.Get()
@@ -174,7 +171,7 @@ func asyncTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc) 
 					assert.Nil(t, value)
 					assert.Equal(t, fmt.Errorf("%d", i), err)
 
-					time.Sleep(errPeriod - 2*safeCheckPeriod)
+					time.Sleep(errorPeriod - 2*safeCheckPeriod)
 
 					value, err = renewable.Get()
 					assert.Nil(t, value)
@@ -185,8 +182,6 @@ func asyncTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc) 
 					}
 				}
 			})
-
-			cwg.Done()
 		}()
 	}
 
