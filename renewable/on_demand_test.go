@@ -13,13 +13,7 @@ func TestOnDemand_Get(t *testing.T) {
 }
 
 func TestOnDemand_Get_Async(t *testing.T) {
-	for i := 0; i < 10; i++ {
-		asyncTestRenewable(t, func(produce ProduceFunc) Renewable {
-			return OnDemandNoCtx(periods.Periods{Default: defaultPeriod, Error: errorPeriod}, produce)
-		})
-
-		if t.Failed() {
-			t.FailNow()
-		}
-	}
+	asyncTestRenewable(t, func(produce ProduceFunc) Renewable {
+		return OnDemandNoCtx(periods.Periods{Default: defaultPeriod, Error: errorPeriod}, produce)
+	})
 }

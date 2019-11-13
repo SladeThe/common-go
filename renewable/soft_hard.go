@@ -16,7 +16,7 @@ const (
 )
 
 func (vt softHardValType) isValid() bool {
-	return vt == softHardValTypeSoft || vt == softHardValTypeHard
+	return vt > softHardValTypeInvalid
 }
 
 var _ Renewable = &softHard{}

@@ -14,14 +14,10 @@ func TestSoftHard_Get(t *testing.T) {
 }
 
 func TestSoftHard_Get_Async(t *testing.T) {
-	for i := 0; i < 10; i++ {
-		asyncTestRenewable(t, func(produce ProduceFunc) Renewable {
-			p := periods.Periods{Default: defaultPeriod, Error: errorPeriod}
-			return SoftHardNoCtx(p, p, produce)
-		})
-
-		if t.Failed() {
-			t.FailNow()
-		}
-	}
+	asyncTestRenewable(t, func(produce ProduceFunc) Renewable {
+		p := periods.Periods{Default: defaultPeriod, Error: errorPeriod}
+		return SoftHardNoCtx(p, p, produce)
+	})
 }
+
+// TODO add more tests
