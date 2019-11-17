@@ -93,15 +93,7 @@ func asyncTestRenewable(
 	createRenewable func(produce ProduceFunc) Renewable,
 	testOnce func(t *testing.T, createRenewable func(produce ProduceFunc) Renewable),
 ) {
-	const (
-		iterCount = 10
-		minNumCPU = 2
-	)
-
-	assert.GreaterOrEqual(t, runtime.NumCPU(), minNumCPU, "insufficient CPUs to run the test properly")
-	if t.Failed() {
-		t.FailNow()
-	}
+	const iterCount = 10
 
 	for i := 0; i < iterCount; i++ {
 		testOnce(t, createRenewable)
@@ -114,10 +106,23 @@ func asyncTestRenewable(
 
 func asyncTestRenewableOnce(t *testing.T, createRenewable func(produce ProduceFunc) Renewable) {
 	const (
-		iterCount              = 10
-		busyGetRoutineCount    = 1
-		valueCheckRoutineCount = 4
+		iterCount = 10
+		minNumCPU = 2
 	)
+
+	var (
+		busyGetRoutineCount    = 1
+		valueCheckRoutineCount = 2
+	)
+
+	if !assert.GreaterOrEqual(t, runtime.NumCPU(), minNumCPU, "insufficient CPUs to run the test properly") {
+		t.FailNow()
+	}
+
+	if runtime.NumCPU() >= minNumCPU*2 {
+		busyGetRoutineCount *= 2
+		valueCheckRoutineCount *= 2
+	}
 
 	var iter uint64 = 0
 	renewable := createRenewable(defaultProduceFunc(t, &iter, iterCount))
