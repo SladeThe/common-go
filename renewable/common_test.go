@@ -88,7 +88,11 @@ func simpleTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc)
 	}
 }
 
-func asyncTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc) Renewable) {
+func asyncTestRenewable(
+	t *testing.T,
+	createRenewable func(produce ProduceFunc) Renewable,
+	testOnce func(t *testing.T, createRenewable func(produce ProduceFunc) Renewable),
+) {
 	const (
 		iterCount = 10
 		minNumCPU = 4
@@ -100,7 +104,7 @@ func asyncTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc) 
 	}
 
 	for i := 0; i < iterCount; i++ {
-		internalAsyncTestRenewable(t, createRenewable)
+		testOnce(t, createRenewable)
 
 		if t.Failed() {
 			t.FailNow()
@@ -108,9 +112,9 @@ func asyncTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc) 
 	}
 }
 
-func internalAsyncTestRenewable(t *testing.T, createRenewable func(produce ProduceFunc) Renewable) {
+func asyncTestRenewableOnce(t *testing.T, createRenewable func(produce ProduceFunc) Renewable) {
 	const (
-		renewCount             = 10
+		iterCount              = 10
 		busyGetRoutineCount    = 2
 		valueCheckRoutineCount = 4
 	)
@@ -119,10 +123,14 @@ func internalAsyncTestRenewable(t *testing.T, createRenewable func(produce Produ
 
 	renewable := createRenewable(func(context.Context) (value interface{}, err error) {
 		i := atomic.LoadUint64(&iter)
-		if i > (renewCount+1)*2 {
+		if i > (iterCount+1)*2 {
 			assert.FailNow(t, fmt.Sprintf("iter is unexpectedly large: %d", i))
 		}
-		defer atomic.StoreUint64(&iter, i+1)
+		defer func() {
+			if !atomic.CompareAndSwapUint64(&iter, i, i+1) {
+				assert.FailNow(t, "iter has been modified concurrently")
+			}
+		}()
 
 		if i%2 == 0 {
 			return i / 2, nil
@@ -164,7 +172,7 @@ func internalAsyncTestRenewable(t *testing.T, createRenewable func(produce Produ
 			defer cwg.Done()
 
 			assert.NotPanics(t, func() {
-				for i := 0; i < renewCount; i++ {
+				for i := 0; i < iterCount; i++ {
 					value, err := renewable.Get()
 					assert.Equal(t, uint64(i), value)
 					assert.Nil(t, err)
@@ -191,7 +199,7 @@ func internalAsyncTestRenewable(t *testing.T, createRenewable func(produce Produ
 					assert.Nil(t, value)
 					assert.Equal(t, fmt.Errorf("%d", i), err)
 
-					if i < renewCount-1 {
+					if i < iterCount-1 {
 						time.Sleep(2 * safeCheckPeriod)
 					}
 				}

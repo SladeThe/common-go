@@ -15,5 +15,5 @@ func TestOnDemand_Get(t *testing.T) {
 func TestOnDemand_Get_Async(t *testing.T) {
 	asyncTestRenewable(t, func(produce ProduceFunc) Renewable {
 		return OnDemandNoCtx(periods.Periods{Default: defaultPeriod, Error: errorPeriod}, produce)
-	})
+	}, asyncTestRenewableOnce)
 }

@@ -10,14 +10,15 @@ import (
 var _ Renewable = &onDemand{}
 
 type onDemand struct {
-	base
+	result
+	producing
 
 	periods periods.Periods
 	lock    *sync.RWMutex
 }
 
 func (r *onDemand) get() (interface{}, error, bool) {
-	if !r.produceTime.IsZero() && r.produceTime.Add(r.periods.Period(r.err)).After(time.Now()) {
+	if r.isValidNow(r.periods) {
 		return r.val, r.err, true
 	}
 
@@ -41,6 +42,6 @@ func (r *onDemand) Get() (interface{}, error) {
 	}
 
 	r.val, r.err = r.produce(r.ctx)
-	r.produceTime = time.Now()
+	r.time = time.Now()
 	return r.val, r.err
 }

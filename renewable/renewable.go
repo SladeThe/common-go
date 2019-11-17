@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"github.com/SladeThe/common-go/renewable/periods"
 )
@@ -18,10 +19,13 @@ type Renewable interface {
 }
 
 // Returns a new instance of Renewable that will call produce only on demand.
+//
 // First time Renewable.Get is called, produce is called and the result is cached.
 // Every next time Get is called, it checks the current time against periods,
 // depending on the result of the previous produce call.
 // If time is expired, produce is called again, otherwise the cached value is returned.
+//
+// Uses read-write synchronization and never performs simultaneous calls of produce.
 //
 // Neither ctx nor produce can be nil.
 // None of the periods can be negative.
@@ -44,9 +48,9 @@ func OnDemand(ctx context.Context, periods periods.Periods, produce ProduceFunc)
 	}
 
 	return &onDemand{
-		base:    base{ctx: ctx, produce: produce},
-		periods: periods,
-		lock:    &sync.RWMutex{},
+		producing: producing{ctx: ctx, produce: produce},
+		periods:   periods,
+		lock:      &sync.RWMutex{},
 	}
 }
 
@@ -55,6 +59,7 @@ func OnDemandNoCtx(periods periods.Periods, produce ProduceFunc) Renewable {
 }
 
 // Returns a new instance of Renewable that will use the soft-hard periods strategy.
+//
 // First time Renewable.Get is called, produce is called and the result is cached.
 // Every next time Get is called, it checks the current time against periods,
 // depending on the result of the previous produce call.
@@ -63,6 +68,8 @@ func OnDemandNoCtx(periods periods.Periods, produce ProduceFunc) Renewable {
 // Otherwise, if hard deadline is NOT passed, the cached value is returned
 // and a goroutine is started to update the result asynchronously.
 // If both periods are expired, produce is called again and a caller waits for it to complete.
+//
+// This renewable doesn't perform simultaneous calls of produce.
 //
 // Neither ctx nor produce can be nil.
 // None of the periods can be negative.
@@ -99,12 +106,15 @@ func SoftHard(ctx context.Context, soft periods.Periods, hard periods.Periods, p
 		panic(errors.New("produce must not be nil"))
 	}
 
+	mutex := &sync.Mutex{}
+
 	return &softHard{
-		base:         base{ctx: ctx, produce: produce},
-		soft:         soft,
-		hard:         hard,
-		lock:         &sync.RWMutex{},
-		asyncResults: make(chan result),
+		producing: producing{ctx: ctx, produce: produce},
+		soft:      soft,
+		hard:      hard,
+		lock:      mutex,
+		condition: sync.NewCond(mutex),
+		container: &atomic.Value{},
 	}
 }
 
