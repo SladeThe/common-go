@@ -95,7 +95,7 @@ func asyncTestRenewable(
 ) {
 	const (
 		iterCount = 10
-		minNumCPU = 4
+		minNumCPU = 2
 	)
 
 	assert.GreaterOrEqual(t, runtime.NumCPU(), minNumCPU, "insufficient CPUs to run the test properly")
@@ -115,7 +115,7 @@ func asyncTestRenewable(
 func asyncTestRenewableOnce(t *testing.T, createRenewable func(produce ProduceFunc) Renewable) {
 	const (
 		iterCount              = 10
-		busyGetRoutineCount    = 2
+		busyGetRoutineCount    = 1
 		valueCheckRoutineCount = 4
 	)
 
