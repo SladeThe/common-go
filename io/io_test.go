@@ -69,6 +69,18 @@ func TestDiffDirsC_DifferentContentStructure(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 15, len(diffs))
 
+	if testing.Verbose() {
+		t.Logf("There are %d diffs.", len(diffs))
+		for i, diff := range diffs {
+			t.Logf("diffs[%d].Item1:%v", i, diff.Item1)
+			t.Logf("diffs[%d].Item2:%v", i, diff.Item2)
+		}
+	}
+
+	if t.Failed() {
+		t.FailNow()
+	}
+
 	{
 		diff := diffs[0]
 		if assert.NotNil(t, diff.Item1) {
