@@ -66,18 +66,8 @@ func TestDiffDirsB_DifferentContent(t *testing.T) {
 
 func TestDiffDirsC_DifferentContentStructure(t *testing.T) {
 	diffs, err := DiffDirs(diffPath("c1"), diffPath("c2"))
-	assert.Nil(t, err)
-	assert.Equal(t, 15, len(diffs))
 
-	if testing.Verbose() {
-		t.Logf("There are %d diffs.", len(diffs))
-		for i, diff := range diffs {
-			t.Logf("diffs[%d].Item1:%v", i, diff.Item1)
-			t.Logf("diffs[%d].Item2:%v", i, diff.Item2)
-		}
-	}
-
-	if t.Failed() {
+	if !assert.Nil(t, err) || !assert.Equal(t, 15, len(diffs)) {
 		t.FailNow()
 	}
 
