@@ -232,7 +232,7 @@ func TestDiffDirsC_DifferentContentStructure(t *testing.T) {
 }
 
 func testPath() string {
-	for _, path := range []string{"io/test", "test"} {
+	for _, path := range []string{"./io/test", "./test"} {
 		if ok, err := IsDir(path); err != nil {
 			panic(err)
 		} else if ok {
