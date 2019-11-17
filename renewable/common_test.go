@@ -120,24 +120,7 @@ func asyncTestRenewableOnce(t *testing.T, createRenewable func(produce ProduceFu
 	)
 
 	var iter uint64 = 0
-
-	renewable := createRenewable(func(context.Context) (value interface{}, err error) {
-		i := atomic.LoadUint64(&iter)
-		if i > (iterCount+1)*2 {
-			assert.FailNow(t, fmt.Sprintf("iter is unexpectedly large: %d", i))
-		}
-		defer func() {
-			if !atomic.CompareAndSwapUint64(&iter, i, i+1) {
-				assert.FailNow(t, "iter has been modified concurrently")
-			}
-		}()
-
-		if i%2 == 0 {
-			return i / 2, nil
-		} else {
-			return nil, fmt.Errorf("%d", (i-1)/2)
-		}
-	})
+	renewable := createRenewable(defaultProduceFunc(t, &iter, iterCount))
 
 	time.Sleep(safeCheckPeriod)
 	assert.Equal(t, uint64(0), iter)
@@ -210,4 +193,24 @@ func asyncTestRenewableOnce(t *testing.T, createRenewable func(produce ProduceFu
 	cwg.Wait()
 	cancel()
 	gwg.Wait()
+}
+
+func defaultProduceFunc(t *testing.T, iter *uint64, iterCount uint64) ProduceFunc {
+	return func(ctx context.Context) (value interface{}, err error) {
+		i := atomic.LoadUint64(iter)
+		if i > (iterCount+1)*2 {
+			assert.FailNow(t, fmt.Sprintf("iter is unexpectedly large: %d", i))
+		}
+		defer func() {
+			if !atomic.CompareAndSwapUint64(iter, i, i+1) {
+				assert.FailNow(t, "iter has been modified concurrently")
+			}
+		}()
+
+		if i%2 == 0 {
+			return i / 2, nil
+		} else {
+			return nil, fmt.Errorf("%d", (i-1)/2)
+		}
+	}
 }
