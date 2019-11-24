@@ -92,21 +92,8 @@ type Logrus struct {
 	MessageColor int
 }
 
-var x bool // TODO
-
 func (formatter *Logrus) Format(entry *logrus.Entry) ([]byte, error) {
 	buf := formatter.buffer(entry)
-
-	if !x {
-		for i := 0; i < 1000; i++ {
-			if terminal.IsValidColor(i) {
-				buf.WriteString(formatter.colorize(terminal.GetColorName(i), i, DefaultTimeColor))
-				buf.WriteByte('\n')
-			}
-		}
-
-		x = true
-	}
 
 	if !formatter.SkipTime {
 		timeText := entry.Time.Format(formatter.timeFormat())
