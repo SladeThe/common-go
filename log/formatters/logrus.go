@@ -25,7 +25,7 @@ const (
 	DefaultTimeColor  = -1
 
 	DefaultCallerColor  = terminal.ForegroundColorBrightBlue
-	DefaultMessageColor = terminal.ForegroundColorWhite
+	DefaultMessageColor = -1
 )
 
 var (
@@ -164,7 +164,7 @@ func (formatter *Logrus) printLevel(buf *bytes.Buffer, entry *logrus.Entry) {
 	}
 
 	if len(levelText) > 0 {
-		buf.WriteString(formatter.colorize2(levelText, levelColors(entry), [2]int{0, 0}))
+		buf.WriteString(formatter.colorize2(levelText, levelColors(entry), [2]int{0, 0})) // TODO override colors
 		buf.WriteByte(' ')
 	}
 }
