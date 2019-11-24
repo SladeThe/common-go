@@ -66,6 +66,44 @@ func isFileOrDir(path string, dir bool) (bool, error) {
 	return dir && isDir(info) || !dir && isFile(info), nil
 }
 
+func isEmpty(path string) (bool, error) {
+	if len(path) <= 0 {
+		return false, errEmptyPath()
+	}
+
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	if isDir(info) {
+		dir, err := os.Open(path)
+		if err != nil {
+			return false, err
+		}
+
+		_, err = dir.Readdirnames(1)
+
+		if err := dir.Close(); err != nil {
+			return false, err
+		}
+
+		if errors.Is(err, EOF) {
+			return true, nil
+		}
+
+		return false, err
+	}
+
+	if isFile(info) {
+		return info.Size() == 0, nil
+	}
+
+	return false, nil
+}
+
 func parent(path string) (string, error) {
 	if len(path) <= 0 {
 		return "", errEmptyPath()

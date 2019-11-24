@@ -32,10 +32,18 @@ func IsDir(path string) (bool, error) {
 	return isFileOrDir(path, true)
 }
 
+// Returns true iff the path entry exists and is one of:
+// 1. A directory with no children.
+// 2. A regular file of zero length.
+func IsEmpty(path string) (bool, error) {
+	return isEmpty(path)
+}
+
 func Parent(path string) (string, error) {
 	return parent(path)
 }
 
+// Returns true iff the parent of this path exists and is a directory.
 func IsParentDir(path string) (bool, error) {
 	return isParentDir(path)
 }
