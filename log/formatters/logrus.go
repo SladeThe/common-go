@@ -19,7 +19,7 @@ const (
 	colorModeForceEnable
 	colorModeForceDisable
 
-	ColorModeEnvName = "S1_LOGRUS_COLORS_MODE"
+	ColorModeEnvName = "S1_LOGRUS_COLOR_MODE"
 
 	DefaultTimeFormat = "2006-01-02 15:04:05.000 MST"
 	DefaultTimeColor  = -1
