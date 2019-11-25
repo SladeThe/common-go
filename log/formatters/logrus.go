@@ -30,8 +30,8 @@ const (
 
 var (
 	functionReplacementByRegexp = map[*regexp.Regexp]string{
-		regexp.MustCompile("\\.\\(\\*([a-zA-Z0-9_]+)\\)\\."): ".$1.", // Remove dereference sign from type
-		regexp.MustCompile("\\.func([0-9]+)$"):               "",     // Remove anonymous function name
+		regexp.MustCompile(`\.\(\*([a-zA-Z0-9_]+)\)\.`): ".$1.", // Remove dereference sign from type
+		regexp.MustCompile(`\.func([0-9]+)$`):           "",     // Remove anonymous function name
 	}
 
 	colorModeByEnv = map[string]int{
