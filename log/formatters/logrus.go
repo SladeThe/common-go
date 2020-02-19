@@ -49,7 +49,7 @@ func init() {
 	}
 }
 
-var _ logrus.Formatter = &Logrus{}
+var _ logrus.Formatter = (*Logrus)(nil)
 
 type Logrus struct {
 	// On Windows combine it with "github.com/mattn/go-colorable".

@@ -8,7 +8,7 @@ import (
 	"github.com/SladeThe/common-go/renewable/periods"
 )
 
-var _ Renewable = &softHard{}
+var _ Renewable = (*softHard)(nil)
 
 type softHard struct {
 	producing

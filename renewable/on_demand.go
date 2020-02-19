@@ -7,7 +7,7 @@ import (
 	"github.com/SladeThe/common-go/renewable/periods"
 )
 
-var _ Renewable = &onDemand{}
+var _ Renewable = (*onDemand)(nil)
 
 type onDemand struct {
 	result
