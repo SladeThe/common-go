@@ -94,14 +94,15 @@ type Logrus struct {
 
 func (formatter *Logrus) Format(entry *logrus.Entry) ([]byte, error) {
 	buf := formatter.buffer(entry)
+	colored := formatter.areColorsEnabled(entry)
 
 	if !formatter.SkipTime {
 		timeText := entry.Time.Format(formatter.timeFormat())
-		buf.WriteString(formatter.colorize(timeText, formatter.TimeColor, DefaultTimeColor))
+		buf.WriteString(formatter.colorize(colored, timeText, formatter.TimeColor, DefaultTimeColor))
 		buf.WriteByte(' ')
 	}
 
-	formatter.printLevel(buf, entry)
+	formatter.printLevel(colored, buf, entry)
 
 	hasCaller := entry.HasCaller()
 
@@ -110,15 +111,21 @@ func (formatter *Logrus) Format(entry *logrus.Entry) ([]byte, error) {
 		for compiledRegexp, replacement := range functionReplacementByRegexp {
 			functionName = compiledRegexp.ReplaceAllString(functionName, replacement)
 		}
-		buf.WriteString(formatter.colorize(functionName, formatter.CallerColor, DefaultCallerColor))
+		buf.WriteString(formatter.colorize(colored, functionName, formatter.CallerColor, DefaultCallerColor))
 		buf.WriteString(": ")
 	}
 
-	formatter.printMessage(buf, entry)
+	formatter.printMessage(colored, buf, entry)
 
 	if hasCaller && len(entry.Caller.File) > 0 {
-		fileText := formatter.colorize(filepath.Base(entry.Caller.File), formatter.CallerColor, DefaultCallerColor)
-		lineText := formatter.colorize(strconv.Itoa(entry.Caller.Line), formatter.CallerColor, DefaultCallerColor)
+		fileText := filepath.Base(entry.Caller.File)
+		lineText := strconv.Itoa(entry.Caller.Line)
+
+		if colored {
+			fileText = formatter.colorize(true, fileText, formatter.CallerColor, DefaultCallerColor)
+			lineText = formatter.colorize(true, lineText, formatter.CallerColor, DefaultCallerColor)
+		}
+
 		buf.WriteString(fmt.Sprintf(" (%s:%s)", fileText, lineText))
 	}
 
@@ -143,7 +150,7 @@ func (formatter *Logrus) timeFormat() string {
 	}
 }
 
-func (formatter *Logrus) printLevel(buf *bytes.Buffer, entry *logrus.Entry) {
+func (formatter *Logrus) printLevel(colored bool, buf *bytes.Buffer, entry *logrus.Entry) {
 	var levelText string
 
 	switch entry.Level {
@@ -164,7 +171,7 @@ func (formatter *Logrus) printLevel(buf *bytes.Buffer, entry *logrus.Entry) {
 	}
 
 	if len(levelText) > 0 {
-		buf.WriteString(formatter.colorize2(levelText, levelColors(entry), [2]int{0, 0})) // TODO override colors
+		buf.WriteString(formatter.colorize2(colored, levelText, levelColors(entry), [2]int{0, 0})) // TODO override colors
 		buf.WriteByte(' ')
 	}
 }
@@ -186,27 +193,35 @@ func levelColors(entry *logrus.Entry) [2]int {
 	}
 }
 
-func (formatter *Logrus) printMessage(buf *bytes.Buffer, entry *logrus.Entry) {
+func (formatter *Logrus) printMessage(colored bool, buf *bytes.Buffer, entry *logrus.Entry) {
 	if formatter.AdvancedColors {
-		buf.WriteString(formatter.colorize(entry.Message, formatter.MessageColor, DefaultMessageColor)) // TODO
+		buf.WriteString(formatter.colorize(colored, entry.Message, formatter.MessageColor, DefaultMessageColor)) // TODO
 	} else {
-		buf.WriteString(formatter.colorize(entry.Message, formatter.MessageColor, DefaultMessageColor))
+		buf.WriteString(formatter.colorize(colored, entry.Message, formatter.MessageColor, DefaultMessageColor))
 	}
 }
 
-func (formatter *Logrus) areColorsEnabled() bool {
+func (formatter *Logrus) areColorsEnabled(entry *logrus.Entry) bool {
 	switch colorMode {
 	case colorModeForceEnable:
 		return true
 	case colorModeForceDisable:
 		return false
 	default:
-		return formatter.EnableColors
+		if !formatter.EnableColors {
+			return false
+		}
+
+		if fileLogger, ok := (entry.Logger.Out).(*os.File); ok {
+			return fileLogger.Name() == "/dev/stdout"
+		}
+
+		return false
 	}
 }
 
-func (formatter *Logrus) colorize(text string, color, defaultColor int) string {
-	if formatter.areColorsEnabled() && color >= 0 {
+func (formatter *Logrus) colorize(colored bool, text string, color, defaultColor int) string {
+	if colored && color >= 0 {
 		if !terminal.IsValidColor(color) {
 			color = defaultColor
 		}
@@ -219,16 +234,16 @@ func (formatter *Logrus) colorize(text string, color, defaultColor int) string {
 	return text
 }
 
-func (formatter *Logrus) colorize2(text string, colors, defaultColors [2]int) string {
+func (formatter *Logrus) colorize2(colored bool, text string, colors, defaultColors [2]int) string {
 	if colors[0] < 0 {
-		return formatter.colorize(text, colors[1], defaultColors[1])
+		return formatter.colorize(colored, text, colors[1], defaultColors[1])
 	}
 
 	if colors[1] < 0 {
-		return formatter.colorize(text, colors[0], defaultColors[0])
+		return formatter.colorize(colored, text, colors[0], defaultColors[0])
 	}
 
-	if formatter.areColorsEnabled() {
+	if colored {
 		for i, color := range colors {
 			if !terminal.IsValidColor(color) {
 				colors[i] = defaultColors[i]
