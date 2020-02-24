@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -116,6 +117,7 @@ func (formatter *Logrus) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 
 	formatter.printMessage(colored, buf, entry)
+	formatter.printFields(buf, entry)
 
 	if hasCaller && len(entry.Caller.File) > 0 {
 		fileText := filepath.Base(entry.Caller.File)
@@ -194,11 +196,38 @@ func levelColors(entry *logrus.Entry) [2]int {
 }
 
 func (formatter *Logrus) printMessage(colored bool, buf *bytes.Buffer, entry *logrus.Entry) {
+	message := strings.TrimSpace(entry.Message)
+
 	if formatter.AdvancedColors {
-		buf.WriteString(formatter.colorize(colored, entry.Message, formatter.MessageColor, DefaultMessageColor)) // TODO
+		buf.WriteString(formatter.colorize(colored, message, formatter.MessageColor, DefaultMessageColor)) // TODO
 	} else {
-		buf.WriteString(formatter.colorize(colored, entry.Message, formatter.MessageColor, DefaultMessageColor))
+		buf.WriteString(formatter.colorize(colored, message, formatter.MessageColor, DefaultMessageColor))
 	}
+}
+
+func (formatter *Logrus) printFields(buf *bytes.Buffer, entry *logrus.Entry) {
+	fieldCount := len(entry.Data)
+	if fieldCount <= 0 {
+		return
+	}
+
+	keys := make([]string, 0, fieldCount)
+	for key := range entry.Data {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	buf.WriteString(" [")
+
+	for i, key := range keys {
+		if i > 0 {
+			buf.WriteString(", ")
+		}
+
+		buf.WriteString(fmt.Sprintf("%v: %v", key, entry.Data[key]))
+	}
+
+	buf.WriteRune(']')
 }
 
 func (formatter *Logrus) areColorsEnabled(entry *logrus.Entry) bool {
@@ -213,7 +242,7 @@ func (formatter *Logrus) areColorsEnabled(entry *logrus.Entry) bool {
 		}
 
 		if fileLogger, ok := (entry.Logger.Out).(*os.File); ok {
-			return fileLogger.Name() == "/dev/stdout"
+			return fileLogger.Name() == "/dev/stdout" // TODO doesn't work in case of hooks
 		}
 
 		return false
