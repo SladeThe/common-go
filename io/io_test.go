@@ -222,7 +222,7 @@ func TestDiffDirsC_DifferentContentStructure(t *testing.T) {
 }
 
 func testPath() string {
-	for _, path := range []string{"./io/test", "./test"} {
+	for _, path := range []string{"./io/testdata", "./testdata"} {
 		if ok, err := IsDir(path); err != nil {
 			panic(err)
 		} else if ok {
@@ -230,7 +230,7 @@ func testPath() string {
 		}
 	}
 
-	panic(errors.New("failed to find test path"))
+	panic(errors.New("failed to find testdata path"))
 }
 
 func diffPath(path string) string {
