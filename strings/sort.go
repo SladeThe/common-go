@@ -5,7 +5,9 @@ import (
 )
 
 // NumericLess compares strings with respect to values of positive integer groups.
-// For example, a9z is considered less than a11z, because 9 is less than 11.
+// For example, 'a9z' is considered less than 'a11z', because 9 < 11.
+// If two numbers with leading zeroes have the same value, the shortest of them is considered less, i.e. 12 < 012.
+// Digits and non-digits are compared lexicographically, i.e. ' ' (space) < 5 < 'a'.
 func NumericLess(a, b string) bool {
 	nextA := func() (rune, int) {
 		r, size := utf8.DecodeRuneInString(a)
@@ -33,21 +35,21 @@ func NumericLess(a, b string) bool {
 		if digitA, digitB := isDigit(runeA), isDigit(runeB); digitA != digitB {
 			return runeA < runeB
 		} else if digitA {
-			zeroCountA, zeroCountB := 0, 0
+			zeroBalance := 0
 			digitCmp := 0
 
 			for runeA == '0' {
-				zeroCountA++
+				zeroBalance++
 				runeA, offsetA = nextA()
 			}
 
 			for runeB == '0' {
-				zeroCountB++
+				zeroBalance--
 				runeB, offsetB = nextB()
 			}
 
 			if offsetA == 0 {
-				return offsetB != 0 || zeroCountA < zeroCountB
+				return offsetB != 0 || zeroBalance < 0
 			}
 
 			if offsetB == 0 {
@@ -55,8 +57,8 @@ func NumericLess(a, b string) bool {
 			}
 
 			if digitA, digitB = isDigit(runeA), isDigit(runeB); !digitA && !digitB {
-				if zeroCountA != zeroCountB {
-					return zeroCountA < zeroCountB
+				if zeroBalance != 0 {
+					return zeroBalance < 0
 				} else if runeA != runeB {
 					return runeA < runeB
 				}
@@ -82,8 +84,8 @@ func NumericLess(a, b string) bool {
 							return digitCmp < 0
 						}
 
-						if zeroCountA != zeroCountB {
-							return zeroCountA < zeroCountB
+						if zeroBalance != 0 {
+							return zeroBalance < 0
 						}
 
 						if offsetA == 0 {

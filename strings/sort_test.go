@@ -46,13 +46,27 @@ var sortTests = []struct {
 	args: sortArgs{a: "b", b: "a"},
 	want: sortWant{less: false},
 }, {
-	name: "digit - non digit",
+	name: "digit - non digit 1",
 	args: sortArgs{a: "1", b: "b"},
 	want: sortWant{less: true},
 }, {
-	name: "non digit - digit",
+	name: "digit - non digit 2",
+	args: sortArgs{
+		a: "T2 x",
+		b: "T  x",
+	},
+	want: sortWant{less: false},
+}, {
+	name: "non digit - digit 1",
 	args: sortArgs{a: "a", b: "1"},
 	want: sortWant{less: false},
+}, {
+	name: "non digit - digit 2",
+	args: sortArgs{
+		a: "T  x",
+		b: "T2 x",
+	},
+	want: sortWant{less: true},
 }, {
 	name: "numbers 1",
 	args: sortArgs{a: "v123", b: "v9"},
@@ -215,6 +229,41 @@ var sortTests = []struct {
 		b: strings.Repeat("1", 1000) + "99",
 	},
 	want: sortWant{less: false},
+}, {
+	name: "number groups 1",
+	args: sortArgs{
+		a: "2021.1.0",
+		b: "2020.8.8",
+	},
+	want: sortWant{less: false},
+}, {
+	name: "number groups 2",
+	args: sortArgs{
+		a: "2021.1.1",
+		b: "2021.1.2",
+	},
+	want: sortWant{less: true},
+}, {
+	name: "number groups 3",
+	args: sortArgs{
+		a: "2021.1.0",
+		b: "2021.1.1",
+	},
+	want: sortWant{less: true},
+}, {
+	name: "number groups 4",
+	args: sortArgs{
+		a: "2020.12.1",
+		b: "2020.12.1",
+	},
+	want: sortWant{less: false},
+}, {
+	name: "custom test 1",
+	args: sortArgs{
+		a: "Terminator 2",
+		b: "Terminator Salvation",
+	},
+	want: sortWant{less: true},
 }}
 
 func BenchmarkNumericLess(b *testing.B) {
