@@ -270,7 +270,7 @@ func BenchmarkNumericLess(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for _, tt := range numericLessTests {
 			if NumericLess(tt.args.a, tt.args.b) != tt.want.less {
-				require.Equal(b, tt.want.less, NumericLess(tt.args.a, tt.args.b), "invalid less")
+				require.Equal(b, tt.want.less, NumericLess(tt.args.a, tt.args.b), tt.name)
 			}
 		}
 	}

@@ -1,18 +1,17 @@
-# Binaries for programs and plugins
+# Binaries and plugins
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
 
-# Test binary, build with `go test -c`
+# Test and coverage tool files
 *.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Different IDEs
+# IDEs
 /.idea
 
-# Other
+# Dependencies
 /go.sum
+vendor/
