@@ -4,7 +4,7 @@ import (
 	"unicode/utf8"
 )
 
-// NumericLess compares strings with respect to values of positive integer groups.
+// NumericLess compares strings with respect to values of nonnegative integer groups.
 // For example, 'a9z' is considered less than 'a11z', because 9 < 11.
 // If two numbers with leading zeroes have the same value, the shortest of them is considered less, i.e. 12 < 012.
 // Digits and non-digits are compared lexicographically, i.e. ' ' (space) < 5 < 'a'.

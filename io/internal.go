@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 const bufferSize = 1 << 20
@@ -222,14 +223,33 @@ func readersContentEqual(r1, r2 io.Reader) (bool, error) {
 	buf1 := make([]byte, bufferSize)
 	buf2 := make([]byte, bufferSize)
 
+	var wg sync.WaitGroup
+
 	for {
-		n1, err1 := readChunk(r1, buf1)
+		var (
+			n1, n2     int
+			err1, err2 error
+		)
+
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+			n1, err1 = readChunk(r1, buf1)
+		}()
+
+		go func() {
+			defer wg.Done()
+			n2, err2 = readChunk(r2, buf2)
+		}()
+
+		wg.Wait()
+
 		eof1 := errors.Is(err1, EOF)
 		if err1 != nil && !eof1 {
 			return false, err1
 		}
 
-		n2, err2 := readChunk(r2, buf2)
 		eof2 := errors.Is(err2, EOF)
 		if err2 != nil && !eof2 {
 			return false, err2
